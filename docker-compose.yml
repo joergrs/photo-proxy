@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  photo-proxy:
+    build: .
+    ports:
+      - "8181:8181"
+    env_file:
+      - .env
+    environment:
+      - NEXTCLOUD_URL=${NEXTCLOUD_URL}
+      - NEXTCLOUD_USERNAME=${NEXTCLOUD_USERNAME}
+      - NEXTCLOUD_PASSWORD=${NEXTCLOUD_PASSWORD}
+      - NEXTCLOUD_DIRS=${NEXTCLOUD_DIRS:-Pictures}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
