@@ -1,4 +1,4 @@
-ARG BUILD_ARCH
+ARG BUILD_ARCH=amd64
 FROM --platform=linux/${BUILD_ARCH} python:3.11-slim
 
 # Set shell

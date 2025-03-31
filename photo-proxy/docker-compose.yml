@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   photo-proxy:
-    build: .
+    build:
+      context: .
+      args:
+        - BUILD_ARCH=amd64
     ports:
       - "8181:8181"
     env_file:
@@ -11,7 +14,7 @@ services:
       - NEXTCLOUD_URL=${NEXTCLOUD_URL}
       - NEXTCLOUD_USERNAME=${NEXTCLOUD_USERNAME}
       - NEXTCLOUD_PASSWORD=${NEXTCLOUD_PASSWORD}
-      - NEXTCLOUD_DIRS=${NEXTCLOUD_DIRS:-Pictures}
+      - NEXTCLOUD_DIRS=${NEXTCLOUD_DIRS}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
