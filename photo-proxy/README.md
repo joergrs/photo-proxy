@@ -1,34 +1,31 @@
-# Photo Proxy Home Assistant Add-on
+# Photo Proxy
 
-A Home Assistant add-on that serves images from your Nextcloud server, either randomly or in sequence.
+A Home Assistant add-on that serves random images from your Nextcloud server. This add-on provides endpoints to fetch random images, which can be used to display them in Home Assistant or other applications.
 
 ## Features
 
-- Serves images from your Nextcloud server
-- Random image selection
-- Sequential image viewing
+- Serves random images from your Nextcloud server
+- Supports multiple directories
+- Provides a status page with service information
 - Health check endpoint
-- Configurable through Home Assistant UI
+- Docker-based deployment
+- Easy configuration through Home Assistant UI
 
 ## Installation
 
-1. Add this repository to your Home Assistant add-on store:
-   - Go to Home Assistant → Settings → Add-ons → Add-on Store
+1. Add this repository to your Home Assistant instance:
+   - Go to Settings > Add-ons > Add-on Store
    - Click the three dots menu in the top right
    - Select "Repositories"
-   - Add the URL of this repository
-   - Click "Add"
+   - Add the URL: `https://github.com/joergrs/photo-proxy`
 
-2. Install the "Photo Proxy" add-on from the add-on store
+2. Install the "Photo Proxy" add-on from the Add-on Store
 
-3. Configure the add-on:
-   - Click on the add-on in the add-on store
-   - Click "Install"
-   - Configure the following required options:
-     - `nextcloud_url`: Your Nextcloud server URL
-     - `nextcloud_username`: Your Nextcloud username
-     - `nextcloud_password`: Your Nextcloud password
-     - `nextcloud_dirs`: Comma-separated list of directories to scan (default: "Pictures")
+3. Configure the add-on with your Nextcloud credentials:
+   - Nextcloud URL: Your Nextcloud server URL
+   - Username: Your Nextcloud username
+   - Password: Your Nextcloud password
+   - Directories: Comma-separated list of directories to fetch images from
 
 4. Start the add-on
 
@@ -36,27 +33,72 @@ A Home Assistant add-on that serves images from your Nextcloud server, either ra
 
 The add-on provides the following endpoints:
 
-- `http://your-home-assistant:8181/random` - Get a random image from your Nextcloud server
-- `http://your-home-assistant:8181/next` - Get the next image in sequence from your Nextcloud server
-- `http://your-home-assistant:8181/health` - Health check endpoint
+- `http://[HOST]:[PORT:8181]/random` - Get a random image
+- `http://[HOST]:[PORT:8181]/next` - Get the next image in sequence
+- `http://[HOST]:[PORT:8181]/health` - Health check endpoint
+- `http://[HOST]:[PORT:8181]/` - Status page with service information
 
-You can use these URLs in Home Assistant entities like:
-- Picture entity cards
-- Custom cards
-- Automations
-- Scripts
+### Using with Home Assistant Generic Camera
 
-## Configuration
+You can use the `/random` endpoint as an image source for a generic camera in Home Assistant. This allows you to display random images from your Nextcloud server in your dashboard or as a background.
 
-### Nextcloud Integration
+Add the following to your `configuration.yaml`:
 
-The add-on requires the following configuration options:
+```yaml
+camera:
+  - platform: generic
+    name: "Random Nextcloud Image"
+    still_image_url: "http://[HOST]:[PORT:8181]/random"
+    content_type: image/jpeg
+    limit_refetch_to_url_change: true
+    frame_interval: 60  # Optional: Update every 60 seconds
+```
 
-- `nextcloud_url`: The URL of your Nextcloud server (required)
-- `nextcloud_username`: Your Nextcloud username (required)
-- `nextcloud_password`: Your Nextcloud password (required)
-- `nextcloud_dirs`: Comma-separated list of directories to scan for images (default: "Pictures")
+Replace `[HOST]` and `[PORT:8181]` with your actual host and port.
 
-## Support
+You can then add this camera to your dashboard using the Picture Entity card or as a background for other cards.
 
-If you encounter any issues or have questions, please open an issue in the GitHub repository.
+## Docker Support
+
+The add-on can also be run as a standalone Docker container:
+
+1. Create a `.env` file with your configuration:
+   ```
+   NEXTCLOUD_URL=your_nextcloud_url
+   NEXTCLOUD_USERNAME=your_username
+   NEXTCLOUD_PASSWORD=your_password
+   NEXTCLOUD_DIRS=Pictures,Photos
+   ```
+
+2. Start the container:
+   ```bash
+   docker-compose up -d
+   ```
+
+The service will be available at `http://localhost:8181`.
+
+## Development
+
+To build and run locally:
+
+1. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Create a `.env` file with your configuration
+
+4. Run the server:
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port 8181
+   ```
+
+## License
+
+MIT License
