@@ -1,7 +1,7 @@
 name: "Photo Proxy"
-version: "1.0.0"
+version: "1.0.1"
 slug: "photo-proxy"
-description: "A proxy server that serves random images from various sources including Nextcloud"
+description: "A proxy server that serves images from Nextcloud"
 url: "https://github.com/joergrs/photo-proxy"
 arch:
   - armhf
