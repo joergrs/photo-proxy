@@ -205,7 +205,7 @@ def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_usern
                 const recentImages = document.querySelectorAll('.recent-image');
                 recentImages.forEach((image, index) => {{
                     image.addEventListener('click', function() {{
-                        const previewContainer = document.getElementById(`preview-${{index + 1}}`);
+                        const previewContainer = document.getElementById(`preview-${{index}}`);
                         const loading = previewContainer.querySelector('.loading');
                         const preview = previewContainer.querySelector('.image-preview');
 
