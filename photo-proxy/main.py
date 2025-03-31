@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Response, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 import aiohttp
 import random
 import asyncio
@@ -10,6 +10,7 @@ import json
 from nextcloud_client import NextcloudClient
 from dotenv import load_dotenv
 import traceback
+from status_page import generate_status_page
 
 # Configure logging with timestamp
 logging.basicConfig(
@@ -88,6 +89,17 @@ async def update_image_list():
     global _all_images
     _all_images = await get_nextcloud_images()
     logger.info(f"Updated total images available: {len(_all_images)}")
+
+@app.get("/", response_class=HTMLResponse)
+async def status_page():
+    """Display a status page with information about the service."""
+    images = await get_nextcloud_images()
+    return generate_status_page(
+        images=images,
+        nextcloud_url=NEXTCLOUD_URL,
+        nextcloud_username=NEXTCLOUD_USERNAME,
+        nextcloud_dirs=NEXTCLOUD_DIRS
+    )
 
 @app.get("/random")
 async def get_random_image():
