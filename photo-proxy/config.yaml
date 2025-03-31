@@ -1,0 +1,32 @@
+name: "Photo Proxy"
+version: "1.0.0"
+slug: "photo-proxy"
+description: "A proxy server that serves random images from various sources including Nextcloud"
+url: "https://github.com/joergrs/photo-proxy"
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+init: false
+startup: application
+boot: auto
+ingress: false
+ingress_port: 8181
+panel_icon: mdi:image-multiple
+ports:
+  8181/tcp: 8181
+ports_description:
+  8181/tcp: "Web interface (not required)"
+webui: "http://[HOST]:[PORT:8181]"
+options:
+  nextcloud_url: ""
+  nextcloud_username: ""
+  nextcloud_password: ""
+  nextcloud_dirs: "Pictures"
+schema:
+  nextcloud_url: str
+  nextcloud_username: str
+  nextcloud_password: password
+  nextcloud_dirs: str
