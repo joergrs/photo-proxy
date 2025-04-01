@@ -1,79 +1,100 @@
-from webdav3.client import Client
+from webdav4.client import Client
 import logging
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import os
-import tempfile
-from io import BytesIO
-
+import traceback
 logger = logging.getLogger(__name__)
 
 class NextcloudClient:
-    def __init__(self, url: str, username: str, password: str):
-        """Initialize Nextcloud client with credentials."""
+    def __init__(self, url: str, username: str, password: str, directories: List[str] = None):
+        """
+        Initialize the Nextcloud client.
+
+        Args:
+            url: Nextcloud server URL
+            username: Nextcloud username
+            password: Nextcloud password
+            directories: List of directories to scan for images
+        """
         self.url = url.rstrip('/')
         self.username = username
         self.password = password
-        options = dict(
-            hostname=self.url,
-            login=self.username,
-            password=self.password,
-            protocol='https',
-            webdav_root=f'/remote.php/dav/files/{self.username}/',
-            verbose=True  # Enable WebDAV client debug logging
+        self.directories = directories or ["Pictures"]
+        self.client = Client(
+            base_url=self.url,
+            auth=(self.username, self.password)
         )
-        self.client = Client(options)
         self._cached_images = {}
 
-    def list_pictures(self, folder: str = "Pictures") -> List[Dict]:
-        """List all pictures in the specified folder."""
-        if folder in self._cached_images:
-            logger.info(f"Using cached Nextcloud images for folder: {folder}")
-            return self._cached_images[folder]
+    def list_pictures(self, folder: str = None) -> List[Dict]:
+        """
+        List all pictures in the specified folder.
 
+        Args:
+            folder: Specific folder to list (if None, lists all configured folders)
+
+        Returns:
+            List of dictionaries containing image information
+        """
         try:
-            # List all files in the folder
-            logger.info(f"Listing files in folder: {folder}")
-            files = self.client.list(folder)
-            logger.info(f"Found {len(files)} files in folder {folder}")
+            # If a specific folder is requested, check cache first
+            if folder and folder in self._cached_images:
+                logger.debug(f"Using cached images for folder: {folder}")
+                return self._cached_images[folder]
 
-            # Filter for image files
-            image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
-            pictures = []
+            # Determine which folders to scan
+            folders_to_scan = [folder] if folder else self.directories
+            all_images = []
 
-            for file in files:
-                full_path = '/'.join([folder, file])
-                if os.path.splitext(file)[1].lower() in image_extensions:
-                    pictures.append({
-                        "name": os.path.basename(file),
-                        "path": full_path,
-                        "url": f"{self.url}/remote.php/dav/files/{self.username}/{full_path}"
-                    })
+            for current_folder in folders_to_scan:
+                # Remove leading/trailing slashes and ensure proper path
+                current_folder = current_folder.strip('/')
+                folder_path = f"/remote.php/dav/files/{self.username}/{current_folder}"
 
-            self._cached_images[folder] = pictures
-            return pictures
+                logger.info(f"Listing files in folder: {current_folder}")
+                # Use the correct method for listing files
+                files = self.client.ls(folder_path)
+
+                # Filter for image files
+                images = [
+                    {
+                        "name": os.path.basename(file["name"]),
+                        "path": file["href"],
+                        "size": file.get("content_length", 0),
+                        "modified": file.get("modified", ""),
+                        "content_type": file.get("content_type", "")
+                    }
+                    for file in files
+                    if file.get("type") == "file" and file["name"].lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp'))
+                ]
+
+                logger.info(f"Found {len(images)} images in {current_folder}")
+                all_images.extend(images)
+
+                # Cache the results for this folder
+                self._cached_images[current_folder] = images
+
+            return all_images
+
         except Exception as e:
-            logger.error(f"Error listing pictures from Nextcloud folder {folder}: {str(e)}")
-            self._cached_images[folder] = []
-            return []
+            traceback.print_exc()
+            logger.error(f"Error listing pictures: {str(e)}")
+            raise
 
-    def get_direct_download_url(self, file_path: str) -> Optional[str]:
-        """Get a direct download URL for a file."""
+    def get_image(self, path: str) -> bytes:
+        """
+        Get the content of an image file.
+
+        Args:
+            path: Full path to the image file
+
+        Returns:
+            Image data as bytes
+        """
         try:
-            return f"{self.url}/remote.php/dav/files/{self.username}/{file_path}"
+            logger.debug(f"Fetching image: {path}")
+            with self.client.open(path, mode="rb") as f:
+                return f.read()
         except Exception as e:
-            logger.error(f"Error getting direct download URL: {str(e)}")
-            return None
-
-    def fetch_file_content(self, url: str) -> Tuple[Optional[bytes], Optional[str]]:
-        """Fetch file content from Nextcloud URL."""
-        try:
-            # Extract the path from the URL
-            path = url.split(f"{self.url}/remote.php/dav/files/{self.username}/")[1]
-            logger.info(f"Fetching file content for path: {path}")
-            # Get file content using BytesIO buffer
-            buffer = BytesIO()
-            self.client.resource(path).write_to(buffer)
-            return buffer.getvalue(), "image/jpeg"  # You might want to detect the actual content type
-        except Exception as e:
-            logger.error(f"Error fetching Nextcloud file: {str(e)}")
-            return None, None
+            logger.error(f"Error fetching image {path}: {str(e)}")
+            raise

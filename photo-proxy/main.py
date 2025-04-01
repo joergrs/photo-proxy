@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Response, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import aiohttp
 import random
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
 import os
 import json
@@ -11,6 +12,7 @@ from nextcloud_client import NextcloudClient
 from dotenv import load_dotenv
 import traceback
 from status_page import generate_status_page
+from image_utils import process_image
 
 # Configure logging with timestamp
 logging.basicConfig(
@@ -41,6 +43,15 @@ else:
 
 app = FastAPI(title="Photo Proxy")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Nextcloud configuration
 NEXTCLOUD_URL = config.get("nextcloud_url")
 NEXTCLOUD_USERNAME = config.get("nextcloud_username")
@@ -55,7 +66,8 @@ if NEXTCLOUD_URL and NEXTCLOUD_USERNAME and NEXTCLOUD_PASSWORD:
     nextcloud_client = NextcloudClient(
         url=NEXTCLOUD_URL,
         username=NEXTCLOUD_USERNAME,
-        password=NEXTCLOUD_PASSWORD
+        password=NEXTCLOUD_PASSWORD,
+        directories=NEXTCLOUD_DIRS
     )
 else:
     logger.error("Nextcloud integration disabled - missing credentials")
@@ -64,6 +76,11 @@ else:
 # Global state for /next endpoint
 _current_index = 0
 _all_images = []
+
+# Get image processing settings from environment
+MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", "1920"))
+JPG_QUALITY = int(os.getenv("JPG_QUALITY", "85"))
+CONVERT_TO_JPG = os.getenv("CONVERT_TO_JPG", "true").lower() == "true"
 
 async def get_nextcloud_images() -> List[Dict]:
     """Get list of images from configured Nextcloud folders."""
@@ -92,80 +109,81 @@ async def update_image_list():
 
 @app.get("/", response_class=HTMLResponse)
 async def status_page():
-    """Display a status page with information about the service."""
-    images = await get_nextcloud_images()
-    return generate_status_page(
-        images=images,
-        nextcloud_url=NEXTCLOUD_URL,
-        nextcloud_username=NEXTCLOUD_USERNAME,
-        nextcloud_dirs=NEXTCLOUD_DIRS
-    )
+    """Serve the status page."""
+    try:
+        images = nextcloud_client.list_pictures()
+        return HTMLResponse(generate_status_page(
+            images=images,
+            nextcloud_url=NEXTCLOUD_URL,
+            nextcloud_username=NEXTCLOUD_USERNAME,
+            nextcloud_dirs=NEXTCLOUD_DIRS
+        ))
+    except Exception as e:
+        logger.error(f"Error generating status page: {e}")
+        raise HTTPException(status_code=500, detail="Error generating status page")
 
 @app.get("/random")
 async def get_random_image():
-    """Serve a random image from Nextcloud."""
-    logger.info("Received request for random image")
+    """Get a random image from Nextcloud."""
+    try:
+        images = nextcloud_client.list_pictures()
+        if not images:
+            raise HTTPException(status_code=404, detail="No images found")
 
-    # Get all available images
-    images = await get_nextcloud_images()
-    logger.info(f"Total images available: {len(images)}")
+        selected_image = random.choice(images)
+        logger.info(f"Selected random image: {selected_image['name']}")
 
-    if not images:
-        logger.error("No images found in Nextcloud")
-        return Response(content="No images found in Nextcloud", status_code=500)
+        # Fetch image data
+        image_data = nextcloud_client.get_image(selected_image["path"])
 
-    # Randomly select an image
-    image = random.choice(images)
-    logger.info(f"Selected image: {image['name']}")
+        # Process image
+        processed_data = process_image(
+            image_data=image_data,
+            max_size=MAX_IMAGE_SIZE,
+            quality=JPG_QUALITY,
+            convert_to_jpg=CONVERT_TO_JPG
+        )
 
-    # Fetch the image
-    logger.debug(f"Fetching image content: {image['name']}")
-    image_content, content_type = nextcloud_client.fetch_file_content(image["url"])
-
-    if image_content is None:
-        logger.error(f"Failed to fetch image: {image['name']}")
-        return Response(content="Failed to fetch image", status_code=500)
-
-    logger.info(f"Successfully fetched image: {image['name']}")
-    return StreamingResponse(
-        content=iter([image_content]),
-        media_type=content_type
-    )
+        return Response(
+            content=processed_data,
+            media_type="image/jpeg" if CONVERT_TO_JPG else "image/png"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        logger.error(f"Error fetching random image: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching image")
 
 @app.get("/next")
 async def get_next_image():
-    """Serve the next image in sequence from Nextcloud."""
-    global _current_index
-    logger.info("Received request for next image")
+    """Get the next image in sequence."""
+    try:
+        images = nextcloud_client.list_pictures()
+        if not images:
+            raise HTTPException(status_code=404, detail="No images found")
 
-    # Update image list if needed
-    if not _all_images:
-        await update_image_list()
+        # Get the next image (implementation depends on your sequence logic)
+        selected_image = images[0]  # For now, just get the first image
+        logger.info(f"Selected next image: {selected_image['name']}")
 
-    if not _all_images:
-        logger.error("No images found in Nextcloud")
-        return Response(content="No images found in Nextcloud", status_code=500)
+        # Fetch image data
+        image_data = nextcloud_client.get_image(selected_image["path"])
 
-    # Get the next image in sequence
-    image = _all_images[_current_index]
-    logger.info(f"Selected image {_current_index + 1}/{len(_all_images)}: {image['name']}")
+        # Process image
+        processed_data = process_image(
+            image_data=image_data,
+            max_size=MAX_IMAGE_SIZE,
+            quality=JPG_QUALITY,
+            convert_to_jpg=CONVERT_TO_JPG
+        )
 
-    # Fetch the image
-    logger.debug(f"Fetching image content: {image['name']}")
-    image_content, content_type = nextcloud_client.fetch_file_content(image["url"])
-
-    if image_content is None:
-        logger.error(f"Failed to fetch image: {image['name']}")
-        return Response(content="Failed to fetch image", status_code=500)
-
-    # Update the index for next time
-    _current_index = (_current_index + 1) % len(_all_images)
-    logger.info(f"Successfully fetched image: {image['name']}")
-
-    return StreamingResponse(
-        content=iter([image_content]),
-        media_type=content_type
-    )
+        return Response(
+            content=processed_data,
+            media_type="image/jpeg" if CONVERT_TO_JPG else "image/png"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        logger.error(f"Error fetching next image: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching image")
 
 @app.get("/health")
 async def health_check():

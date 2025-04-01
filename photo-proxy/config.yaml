@@ -25,8 +25,14 @@ options:
   nextcloud_username: ""
   nextcloud_password: ""
   nextcloud_dirs: "Pictures"
+  max_image_size: 1920
+  jpg_quality: 85
+  convert_to_jpg: true
 schema:
   nextcloud_url: str
   nextcloud_username: str
   nextcloud_password: password
   nextcloud_dirs: str
+  max_image_size: int
+  jpg_quality: int
+  convert_to_jpg: bool
