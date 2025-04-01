@@ -54,6 +54,13 @@ def generate_slideshow_page() -> str:
                 display: flex;
                 gap: 10px;
                 z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+                pointer-events: none;
+            }
+            #controls.visible {
+                opacity: 1;
+                pointer-events: auto;
             }
             button {
                 background-color: #fff;
@@ -91,12 +98,14 @@ def generate_slideshow_page() -> str:
         <script>
             let isPlaying = true;
             let timer = null;
+            let imageTimer = null;
             let timeLeft = 10;
             let currentSlide = 0;
             let nextSlide = 1;
             const slides = document.querySelectorAll('.slide');
             const status = document.getElementById('status');
             const playButton = document.querySelector('button');
+            const controls = document.getElementById('controls');
 
             function updateTimer() {
                 if (isPlaying) {
@@ -147,14 +156,40 @@ def generate_slideshow_page() -> str:
                 playButton.textContent = isPlaying ? 'Pause' : 'Play';
                 if (isPlaying) {
                     timer = setInterval(updateTimer, 1000);
+                    imageTimer = setInterval(nextImage, 10000);
                 } else {
                     clearInterval(timer);
+                    clearInterval(imageTimer);
                 }
             }
 
+            function updateControlsVisibility(mouseY) {
+                const windowHeight = window.innerHeight;
+                const lowerQuarter = windowHeight * 0.75;
+
+                if (mouseY > lowerQuarter) {
+                    controls.classList.add('visible');
+                } else {
+                    controls.classList.remove('visible');
+                }
+            }
+
+            // Handle mouse movement
+            document.addEventListener('mousemove', (e) => {
+                updateControlsVisibility(e.clientY);
+            });
+
+            // Handle mouse leaving the window
+            document.addEventListener('mouseout', (e) => {
+                // Only hide if the mouse actually left the window (not just moved over a child element)
+                if (!e.relatedTarget) {
+                    controls.classList.remove('visible');
+                }
+            });
+
             // Start the slideshow
             timer = setInterval(updateTimer, 1000);
-            setInterval(nextImage, 10000);
+            imageTimer = setInterval(nextImage, 10000);
 
             // Handle image loading errors
             document.querySelectorAll('.slide img').forEach(img => {
