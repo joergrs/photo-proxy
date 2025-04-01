@@ -57,6 +57,7 @@ def generate_slideshow_page() -> str:
                 opacity: 0;
                 transition: opacity 0.3s ease-in-out;
                 pointer-events: none;
+                align-items: center;
             }
             #controls.visible {
                 opacity: 1;
@@ -69,6 +70,8 @@ def generate_slideshow_page() -> str:
                 border-radius: 3px;
                 cursor: pointer;
                 font-size: 14px;
+                height: 24px;
+                line-height: 1;
             }
             button:hover {
                 background-color: #eee;
@@ -77,6 +80,7 @@ def generate_slideshow_page() -> str:
                 color: #fff;
                 font-family: Arial, sans-serif;
                 font-size: 14px;
+                line-height: 24px;
             }
         </style>
     </head>
