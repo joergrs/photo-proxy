@@ -117,7 +117,10 @@ async def status_page():
             images=images,
             nextcloud_url=NEXTCLOUD_URL,
             nextcloud_username=NEXTCLOUD_USERNAME,
-            nextcloud_dirs=NEXTCLOUD_DIRS
+            nextcloud_dirs=NEXTCLOUD_DIRS,
+            max_image_size=MAX_IMAGE_SIZE,
+            jpg_quality=JPG_QUALITY,
+            convert_to_jpg=CONVERT_TO_JPG
         ))
     except Exception as e:
         logger.error(f"Error generating status page: {e}")
