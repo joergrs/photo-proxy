@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 import traceback
 from status_page import generate_status_page
 from image_utils import process_image
+from slideshow_page import generate_slideshow_page
 
 # Configure logging with timestamp
 logging.basicConfig(
@@ -184,6 +185,11 @@ async def get_next_image():
         traceback.print_exc()
         logger.error(f"Error fetching next image: {e}")
         raise HTTPException(status_code=500, detail="Error fetching image")
+
+@app.get("/slideshow", response_class=HTMLResponse)
+async def slideshow():
+    """Serve the slideshow page."""
+    return generate_slideshow_page()
 
 @app.get("/health")
 async def health_check():
