@@ -1,104 +1,83 @@
 # Photo Proxy
 
-A Home Assistant add-on that serves random images from your Nextcloud server. This add-on provides endpoints to fetch random images, which can be used to display them in Home Assistant or other applications.
+A Home Assistant add-on that serves images from Nextcloud as a proxy. This is useful for displaying images from Nextcloud in Home Assistant dashboards or other applications that don't support WebDAV authentication.
 
 ## Features
 
-- Serves random images from your Nextcloud server
+- Serves images from Nextcloud via HTTP
 - Supports multiple directories
-- Provides a status page with service information
-- Health check endpoint
-- Docker-based deployment
-- Easy configuration through Home Assistant UI
+- Image processing features:
+  - Automatic EXIF rotation
+  - Image scaling (configurable max size)
+  - Optional JPG conversion with quality control
+- Status page showing service information and recent images
+- Slideshow mode with:
+  - Automatic image transitions every 10 seconds
+  - Smooth fade effects between images
+  - Play/pause controls
+  - Manual next image button
+  - Auto-hiding controls when mouse is not in the lower screen area
+  - Error handling for failed image loads
 
 ## Installation
 
-1. Add this repository to your Home Assistant instance:
-   - Go to Settings > Add-ons > Add-on Store
-   - Click the three dots menu in the top right
-   - Select "Repositories"
-   - Add the URL: `https://github.com/joergrs/photo-proxy`
-
-2. Install the "Photo Proxy" add-on from the Add-on Store
-
-3. Configure the add-on with your Nextcloud credentials:
-   - Nextcloud URL: Your Nextcloud server URL
-   - Username: Your Nextcloud username
-   - Password: Your Nextcloud password
-   - Directories: Comma-separated list of directories to fetch images from
-
+1. Add the repository to your Home Assistant instance
+2. Install the add-on
+3. Configure the add-on with your Nextcloud credentials and settings
 4. Start the add-on
+
+## Configuration
+
+The add-on can be configured through the Home Assistant UI or by editing the `config.yaml` file:
+
+```yaml
+nextcloud_url: "https://your-nextcloud-instance.com"
+nextcloud_username: "your-username"
+nextcloud_password: "your-password"
+nextcloud_dirs: "Pictures"  # Comma-separated list of directories
+max_image_size: 1920       # Maximum width/height for scaled images
+jpg_quality: 85           # Quality for JPG conversion (1-100)
+convert_to_jpg: true      # Whether to convert all images to JPG
+```
 
 ## Usage
 
-The add-on provides the following endpoints:
+The add-on provides several endpoints:
 
-- `http://[HOST]:[PORT:8181]/random` - Get a random image
-- `http://[HOST]:[PORT:8181]/next` - Get the next image in sequence
-- `http://[HOST]:[PORT:8181]/health` - Health check endpoint
-- `http://[HOST]:[PORT:8181]/` - Status page with service information
+- `/` - Status page showing service information and recent images
+- `/random` - Returns a random image from the configured directories
+- `/next` - Returns the next image in sequence
+- `/slideshow` - A full-screen slideshow page with automatic transitions and controls
 
-### Using with Home Assistant Generic Camera
+### Image URLs
 
-You can use the `/random` endpoint as an image source for a generic camera in Home Assistant. This allows you to display random images from your Nextcloud server in your dashboard or as a background.
-
-Add the following to your `configuration.yaml`:
-
-```yaml
-camera:
-  - platform: generic
-    name: "Random Nextcloud Image"
-    still_image_url: "http://[HOST]:[PORT:8181]/random"
-    content_type: image/jpeg
-    limit_refetch_to_url_change: true
-    frame_interval: 60  # Optional: Update every 60 seconds
+Images can be accessed using the following URL pattern:
+```
+http://your-home-assistant:8181/random
 ```
 
-Replace `[HOST]` and `[PORT:8181]` with your actual host and port.
+The image will be:
+1. Automatically rotated based on EXIF data
+2. Scaled if larger than `max_image_size`
+3. Converted to JPG if `convert_to_jpg` is enabled
 
-You can then add this camera to your dashboard using the Picture Entity card or as a background for other cards.
+### Slideshow Mode
 
-## Docker Support
-
-The add-on can also be run as a standalone Docker container:
-
-1. Create a `.env` file with your configuration:
-   ```
-   NEXTCLOUD_URL=your_nextcloud_url
-   NEXTCLOUD_USERNAME=your_username
-   NEXTCLOUD_PASSWORD=your_password
-   NEXTCLOUD_DIRS=Pictures,Photos
-   ```
-
-2. Start the container:
-   ```bash
-   docker-compose up -d
-   ```
-
-The service will be available at `http://localhost:8181`.
+The `/slideshow` endpoint provides a full-screen slideshow experience:
+- Images automatically transition every 10 seconds with a smooth fade effect
+- Controls appear when the mouse is in the lower quarter of the screen
+- Play/pause button to control automatic transitions
+- Next button to manually advance to the next image
+- Countdown timer showing seconds until next transition
+- Controls automatically hide when the mouse leaves the screen area
 
 ## Development
 
-To build and run locally:
-
-1. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Create a `.env` file with your configuration
-
-4. Run the server:
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8181
-   ```
+The add-on is built using:
+- FastAPI for the web server
+- Pillow for image processing
+- webdav4-client for Nextcloud communication
 
 ## License
 
-MIT License
+MIT License - see LICENSE file for details
