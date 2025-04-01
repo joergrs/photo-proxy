@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict, Optional
 import os
 import traceback
+from urllib.parse import quote, unquote
 logger = logging.getLogger(__name__)
 
 class NextcloudClient:
@@ -93,7 +94,11 @@ class NextcloudClient:
         """
         try:
             logger.debug(f"Fetching image: {path}")
-            with self.client.open(path, mode="rb") as f:
+            # Decode the URL-encoded path
+            decoded_path = unquote(path)
+
+            # Use open() for fetching files with the decoded path
+            with self.client.open(decoded_path, mode="rb") as f:
                 return f.read()
         except Exception as e:
             logger.error(f"Error fetching image {path}: {str(e)}")
