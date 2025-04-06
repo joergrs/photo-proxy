@@ -92,10 +92,10 @@ _current_index = 0
 _all_images = []
 
 # Get image processing settings from environment
-MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", "1920"))
-JPG_QUALITY = int(os.getenv("JPG_QUALITY", "85"))
-CONVERT_TO_JPG = os.getenv("CONVERT_TO_JPG", "true").lower() == "true"
-CROP_PORTRAIT_TO_SQUARE = os.getenv("CROP_PORTRAIT_TO_SQUARE", "false").lower() == "true"
+MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", config.get("max_image_size", 1920)))
+JPG_QUALITY = int(os.getenv("JPG_QUALITY", config.get("jpg_quality", 85)))
+CONVERT_TO_JPG = os.getenv("CONVERT_TO_JPG", config.get("convert_to_jpg", True))
+CROP_PORTRAIT_TO_SQUARE = os.getenv("CROP_PORTRAIT_TO_SQUARE", config.get("crop_portrait_to_square", False))
 
 # Initialize image cache
 image_cache = ImageCache(max_size=500)
