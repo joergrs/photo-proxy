@@ -39,12 +39,16 @@ else:
         "nextcloud_url": os.getenv("NEXTCLOUD_URL", ""),
         "nextcloud_username": os.getenv("NEXTCLOUD_USERNAME", ""),
         "nextcloud_password": os.getenv("NEXTCLOUD_PASSWORD", ""),
-        "nextcloud_dirs": os.getenv("NEXTCLOUD_DIRS", "Pictures")
+        "nextcloud_dirs": os.getenv("NEXTCLOUD_DIRS", "Pictures"),
+        "crop_portrait_to_square": os.getenv("CROP_PORTRAIT_TO_SQUARE", "false").lower() == "true",
+        "debug_logging": os.getenv("DEBUG_LOGGING", "false").lower() == "true"
     }
     logger.info("Loaded configuration from environment variables")
 
+logger.info(f"Configuration: {config}")
+
 # Get debug logging setting
-DEBUG_LOGGING = os.getenv("DEBUG_LOGGING", "false").lower() == "true"
+DEBUG_LOGGING = os.getenv("DEBUG_LOGGING", config.get("debug_logging", "false")).lower() == "true"
 if DEBUG_LOGGING:
     logging.getLogger().setLevel(logging.DEBUG)
     logger.info("Debug logging enabled")
