@@ -1,5 +1,5 @@
 name: "Photo Proxy"
-version: "1.6.0"
+version: "1.6.1"
 slug: "photo-proxy"
 description: "A proxy server that serves images from Nextcloud"
 url: "https://github.com/joergrs/photo-proxy"
