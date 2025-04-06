@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import aiohttp
 import random
 import asyncio
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import logging
 import os
 import json
@@ -14,6 +14,7 @@ import traceback
 from status_page import generate_status_page
 from image_utils import process_image
 from slideshow_page import generate_slideshow_page
+from image_cache import ImageCache
 
 # Configure logging with timestamp
 logging.basicConfig(
@@ -84,6 +85,10 @@ JPG_QUALITY = int(os.getenv("JPG_QUALITY", "85"))
 CONVERT_TO_JPG = os.getenv("CONVERT_TO_JPG", "true").lower() == "true"
 CROP_PORTRAIT_TO_SQUARE = os.getenv("CROP_PORTRAIT_TO_SQUARE", "false").lower() == "true"
 
+# Initialize image cache
+image_cache = ImageCache(max_size=500)
+logger.info("Initialized image cache")
+
 async def get_nextcloud_images() -> List[Dict]:
     """Get list of images from configured Nextcloud folders."""
     if not nextcloud_client:
@@ -114,6 +119,7 @@ async def status_page():
     """Serve the status page."""
     try:
         images = nextcloud_client.list_pictures()
+        cache_stats = image_cache.get_stats()
         return HTMLResponse(generate_status_page(
             images=images,
             nextcloud_url=NEXTCLOUD_URL,
@@ -122,11 +128,58 @@ async def status_page():
             max_image_size=MAX_IMAGE_SIZE,
             jpg_quality=JPG_QUALITY,
             convert_to_jpg=CONVERT_TO_JPG,
-            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
+            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE,
+            cache_stats=cache_stats
         ))
     except Exception as e:
         logger.error(f"Error generating status page: {e}")
         raise HTTPException(status_code=500, detail="Error generating status page")
+
+async def get_processed_image(image_path: str) -> Tuple[bytes, str]:
+    """
+    Get a processed image, either from cache or by processing it.
+
+    Args:
+        image_path: Path to the image in Nextcloud
+
+    Returns:
+        Tuple of (processed_image_data, content_type)
+    """
+    # Try to get from cache first
+    cached = image_cache.get(image_path)
+    if cached:
+        logger.debug(f"Cache hit for image: {image_path}")
+        return cached
+
+    logger.debug(f"Cache miss for image: {image_path}")
+    # Fetch and process image
+    image_data = nextcloud_client.get_image(image_path)
+    processed_data = process_image(
+        image_data=image_data,
+        max_size=MAX_IMAGE_SIZE,
+        quality=JPG_QUALITY,
+        convert_to_jpg=CONVERT_TO_JPG,
+        crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
+    )
+
+    # Store in cache
+    if CONVERT_TO_JPG:
+        content_type = "image/jpeg"
+    else:
+        # Determine content type from original file extension
+        ext = image_path.lower().split('.')[-1]
+        content_type_map = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'bmp': 'image/bmp'
+        }
+        content_type = content_type_map.get(ext, 'application/octet-stream')
+    image_cache.put(image_path, processed_data, content_type)
+
+    return processed_data, content_type
 
 @app.get("/random")
 async def get_random_image():
@@ -139,21 +192,12 @@ async def get_random_image():
         selected_image = random.choice(images)
         logger.info(f"Selected random image: {selected_image['name']}")
 
-        # Fetch image data
-        image_data = nextcloud_client.get_image(selected_image["path"])
-
-        # Process image
-        processed_data = process_image(
-            image_data=image_data,
-            max_size=MAX_IMAGE_SIZE,
-            quality=JPG_QUALITY,
-            convert_to_jpg=CONVERT_TO_JPG,
-            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
-        )
+        # Get processed image
+        processed_data, content_type = await get_processed_image(selected_image["path"])
 
         return Response(
             content=processed_data,
-            media_type="image/jpeg" if CONVERT_TO_JPG else "image/png"
+            media_type=content_type
         )
     except Exception as e:
         traceback.print_exc()
@@ -172,21 +216,12 @@ async def get_next_image():
         selected_image = images[0]  # For now, just get the first image
         logger.info(f"Selected next image: {selected_image['name']}")
 
-        # Fetch image data
-        image_data = nextcloud_client.get_image(selected_image["path"])
-
-        # Process image
-        processed_data = process_image(
-            image_data=image_data,
-            max_size=MAX_IMAGE_SIZE,
-            quality=JPG_QUALITY,
-            convert_to_jpg=CONVERT_TO_JPG,
-            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
-        )
+        # Get processed image
+        processed_data, content_type = await get_processed_image(selected_image["path"])
 
         return Response(
             content=processed_data,
-            media_type="image/jpeg" if CONVERT_TO_JPG else "image/png"
+            media_type=content_type
         )
     except Exception as e:
         traceback.print_exc()

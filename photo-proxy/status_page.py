@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_username: str, nextcloud_dirs: List[str], max_image_size: int, jpg_quality: int, convert_to_jpg: bool, crop_portrait_to_square: bool) -> str:
+def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_username: str, nextcloud_dirs: List[str], max_image_size: int, jpg_quality: int, convert_to_jpg: bool, crop_portrait_to_square: bool, cache_stats: Dict[str, int]) -> str:
     """Generate a status page with information about the service using Bootstrap 5."""
     return f"""
     <!DOCTYPE html>
@@ -50,16 +50,44 @@ def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_usern
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="bi bi-check-circle-fill text-success me-2"></i>
                                         <span class="status-badge">Running</span>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="bi bi-images me-2"></i>
                                         <span class="status-badge">Total Images: {len(images)}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="bi bi-hdd me-2"></i>
+                                        <span class="status-badge">Cache Size: {cache_stats['size']}/{cache_stats['max_size']}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <span class="status-badge">Cache Hits: {cache_stats['hits']}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="bi bi-x-circle me-2"></i>
+                                        <span class="status-badge">Cache Misses: {cache_stats['misses']}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="bi bi-graph-up me-2"></i>
+                                        <span class="status-badge">Cache Hit Ratio: {cache_stats['hit_ratio']}%</span>
                                     </div>
                                 </div>
                             </div>
