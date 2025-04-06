@@ -75,6 +75,8 @@ def convert_to_landscape_3_2(image: Image.Image) -> Image.Image:
     if height > width:
         image = crop_portrait_to_square(image)
         width = image.size[0]  # Update width after cropping
+    else:
+        return image
 
     # Calculate target dimensions for 3:2 aspect ratio
     target_height = width  # Keep the original width
