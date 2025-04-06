@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_username: str, nextcloud_dirs: List[str], max_image_size: int, jpg_quality: int, convert_to_jpg: bool) -> str:
+def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_username: str, nextcloud_dirs: List[str], max_image_size: int, jpg_quality: int, convert_to_jpg: bool, crop_portrait_to_square: bool) -> str:
     """Generate a status page with information about the service using Bootstrap 5."""
     return f"""
     <!DOCTYPE html>
@@ -100,22 +100,28 @@ def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_usern
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label text-muted">Max Image Size</label>
                                         <div>{max_image_size}px</div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label text-muted">JPG Quality</label>
                                         <div>{jpg_quality}%</div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label text-muted">Convert to JPG</label>
                                         <div>{'Yes' if convert_to_jpg else 'No'}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Crop Portrait to Square</label>
+                                        <div>{'Yes' if crop_portrait_to_square else 'No'}</div>
                                     </div>
                                 </div>
                             </div>

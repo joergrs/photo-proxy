@@ -10,7 +10,8 @@ def process_image(
     image_data: bytes,
     max_size: Optional[int] = None,
     quality: int = 85,
-    convert_to_jpg: bool = True
+    convert_to_jpg: bool = True,
+    crop_portrait_to_square: bool = False
 ) -> bytes:
     """
     Process an image by scaling, rotating based on EXIF, and optionally converting to JPG.
@@ -20,6 +21,7 @@ def process_image(
         max_size: Maximum width/height for scaling (None for no scaling)
         quality: JPEG quality (1-100)
         convert_to_jpg: Whether to convert the image to JPG format
+        crop_portrait_to_square: Whether to crop portrait images to a square aspect ratio
 
     Returns:
         Processed image data in bytes
@@ -53,6 +55,18 @@ def process_image(
         # Scale image if max_size is specified
         if max_size:
             image = scale_image(image, max_size)
+
+        # Crop portrait images to square if requested
+        if crop_portrait_to_square:
+            width, height = image.size
+            if height > width:  # Portrait orientation
+                # Calculate crop box (center crop)
+                left = 0
+                top = (height - width) // 2
+                right = width
+                bottom = top + width
+                image = image.crop((left, top, right, bottom))
+                logger.debug(f"Cropped portrait image to square {width}x{width}")
 
         # Convert to RGB if needed (for JPG conversion)
         if convert_to_jpg and image.mode not in ('RGB', 'RGBA'):

@@ -82,6 +82,7 @@ _all_images = []
 MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", "1920"))
 JPG_QUALITY = int(os.getenv("JPG_QUALITY", "85"))
 CONVERT_TO_JPG = os.getenv("CONVERT_TO_JPG", "true").lower() == "true"
+CROP_PORTRAIT_TO_SQUARE = os.getenv("CROP_PORTRAIT_TO_SQUARE", "false").lower() == "true"
 
 async def get_nextcloud_images() -> List[Dict]:
     """Get list of images from configured Nextcloud folders."""
@@ -120,7 +121,8 @@ async def status_page():
             nextcloud_dirs=NEXTCLOUD_DIRS,
             max_image_size=MAX_IMAGE_SIZE,
             jpg_quality=JPG_QUALITY,
-            convert_to_jpg=CONVERT_TO_JPG
+            convert_to_jpg=CONVERT_TO_JPG,
+            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
         ))
     except Exception as e:
         logger.error(f"Error generating status page: {e}")
@@ -145,7 +147,8 @@ async def get_random_image():
             image_data=image_data,
             max_size=MAX_IMAGE_SIZE,
             quality=JPG_QUALITY,
-            convert_to_jpg=CONVERT_TO_JPG
+            convert_to_jpg=CONVERT_TO_JPG,
+            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
         )
 
         return Response(
@@ -177,7 +180,8 @@ async def get_next_image():
             image_data=image_data,
             max_size=MAX_IMAGE_SIZE,
             quality=JPG_QUALITY,
-            convert_to_jpg=CONVERT_TO_JPG
+            convert_to_jpg=CONVERT_TO_JPG,
+            crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE
         )
 
         return Response(
