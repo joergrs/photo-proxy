@@ -65,7 +65,7 @@ def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_usern
                                 <div class="col-md-3">
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="bi bi-hdd me-2"></i>
-                                        <span class="status-badge">Cache Size: {cache_stats['size']}/{cache_stats['max_size']}</span>
+                                        <span class="status-badge">Cache Size: {cache_stats['size']}/{cache_stats['max_size']} ({cache_stats['size_mb']} MB)</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">

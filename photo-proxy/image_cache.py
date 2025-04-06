@@ -67,6 +67,16 @@ class ImageCache:
         self.misses = 0
         logger.info("Cleared image cache")
 
+    def get_size_mb(self) -> float:
+        """
+        Calculate the total size of the cache in megabytes.
+
+        Returns:
+            Size of the cache in MB, rounded to 2 decimal places
+        """
+        total_bytes = sum(len(data[0]) for data in self.cache.values())
+        return round(total_bytes / (1024 * 1024), 2)
+
     def get_stats(self) -> Dict[str, int]:
         """
         Get cache statistics.
@@ -79,5 +89,6 @@ class ImageCache:
             "max_size": self.max_size,
             "hits": self.hits,
             "misses": self.misses,
-            "hit_ratio": round(self.hits / (self.hits + self.misses) * 100, 2) if (self.hits + self.misses) > 0 else 0
+            "hit_ratio": round(self.hits / (self.hits + self.misses) * 100, 2) if (self.hits + self.misses) > 0 else 0,
+            "size_mb": self.get_size_mb()
         }
