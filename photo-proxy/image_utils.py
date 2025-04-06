@@ -6,6 +6,72 @@ from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+def handle_exif_rotation(image: Image.Image) -> Image.Image:
+    """
+    Handle EXIF rotation data in the image.
+
+    Args:
+        image: PIL Image object
+
+    Returns:
+        Rotated PIL Image object if EXIF data indicates rotation needed
+    """
+    try:
+        # Extract EXIF data
+        exif_dict = piexif.load(image.info.get("exif", b""))
+        if exif_dict and "0th" in exif_dict:
+            orientation = exif_dict["0th"].get(piexif.ImageIFD.Orientation)
+            if orientation:
+                # Rotate image based on EXIF orientation
+                rotation_angles = {
+                    3: 180,
+                    6: 270,
+                    8: 90
+                }
+                if orientation in rotation_angles:
+                    image = image.rotate(rotation_angles[orientation], expand=True)
+                    logger.debug(f"Rotated image by {rotation_angles[orientation]} degrees based on EXIF data")
+    except Exception as e:
+        logger.warning(f"Failed to process EXIF data: {e}")
+
+    return image
+
+def crop_portrait_to_square(image: Image.Image) -> Image.Image:
+    """
+    Crop a portrait image to a square aspect ratio by center cropping.
+
+    Args:
+        image: PIL Image object
+
+    Returns:
+        Cropped PIL Image object if portrait orientation, otherwise original image
+    """
+    width, height = image.size
+    if height > width:  # Portrait orientation
+        # Calculate crop box (center crop)
+        left = 0
+        top = (height - width) // 2
+        right = width
+        bottom = top + width
+        image = image.crop((left, top, right, bottom))
+        logger.debug(f"Cropped portrait image to square {width}x{width}")
+    return image
+
+def convert_to_jpeg(image: Image.Image, quality: int = 85) -> Image.Image:
+    """
+    Convert an image to JPEG format if needed.
+
+    Args:
+        image: PIL Image object
+        quality: JPEG quality (1-100)
+
+    Returns:
+        Converted PIL Image object
+    """
+    if image.mode not in ('RGB', 'RGBA'):
+        image = image.convert('RGB')
+    return image
+
 def process_image(
     image_data: bytes,
     max_size: Optional[int] = None,
@@ -34,23 +100,7 @@ def process_image(
         original_format = image.format.lower()
 
         # Handle EXIF rotation
-        try:
-            # Extract EXIF data
-            exif_dict = piexif.load(image.info.get("exif", b""))
-            if exif_dict and "0th" in exif_dict:
-                orientation = exif_dict["0th"].get(piexif.ImageIFD.Orientation)
-                if orientation:
-                    # Rotate image based on EXIF orientation
-                    rotation_angles = {
-                        3: 180,
-                        6: 270,
-                        8: 90
-                    }
-                    if orientation in rotation_angles:
-                        image = image.rotate(rotation_angles[orientation], expand=True)
-                        logger.debug(f"Rotated image by {rotation_angles[orientation]} degrees based on EXIF data")
-        except Exception as e:
-            logger.warning(f"Failed to process EXIF data: {e}")
+        image = handle_exif_rotation(image)
 
         # Scale image if max_size is specified
         if max_size:
@@ -58,19 +108,11 @@ def process_image(
 
         # Crop portrait images to square if requested
         if crop_portrait_to_square:
-            width, height = image.size
-            if height > width:  # Portrait orientation
-                # Calculate crop box (center crop)
-                left = 0
-                top = (height - width) // 2
-                right = width
-                bottom = top + width
-                image = image.crop((left, top, right, bottom))
-                logger.debug(f"Cropped portrait image to square {width}x{width}")
+            image = crop_portrait_to_square(image)
 
-        # Convert to RGB if needed (for JPG conversion)
-        if convert_to_jpg and image.mode not in ('RGB', 'RGBA'):
-            image = image.convert('RGB')
+        # Convert to JPEG if requested
+        if convert_to_jpg:
+            image = convert_to_jpeg(image, quality)
 
         # Prepare output
         output = BytesIO()
