@@ -1,5 +1,5 @@
 name: "Photo Proxy"
-version: "1.3.0"
+version: "1.4.0"
 slug: "photo-proxy"
 description: "A proxy server that serves images from Nextcloud"
 url: "https://github.com/joergrs/photo-proxy"
@@ -29,6 +29,7 @@ options:
   jpg_quality: 85
   convert_to_jpg: true
   crop_portrait_to_square: false
+  debug_logging: false
 schema:
   nextcloud_url: str
   nextcloud_username: str
@@ -38,3 +39,4 @@ schema:
   jpg_quality: int
   convert_to_jpg: bool
   crop_portrait_to_square: bool
+  debug_logging: bool

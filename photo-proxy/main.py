@@ -43,6 +43,14 @@ else:
     }
     logger.info("Loaded configuration from environment variables")
 
+# Get debug logging setting
+DEBUG_LOGGING = os.getenv("DEBUG_LOGGING", "false").lower() == "true"
+if DEBUG_LOGGING:
+    logging.getLogger().setLevel(logging.DEBUG)
+    logger.info("Debug logging enabled")
+else:
+    logger.info("Debug logging disabled")
+
 app = FastAPI(title="Photo Proxy")
 
 # Add CORS middleware
@@ -129,7 +137,8 @@ async def status_page():
             jpg_quality=JPG_QUALITY,
             convert_to_jpg=CONVERT_TO_JPG,
             crop_portrait_to_square=CROP_PORTRAIT_TO_SQUARE,
-            cache_stats=cache_stats
+            cache_stats=cache_stats,
+            debug_logging=DEBUG_LOGGING
         ))
     except Exception as e:
         logger.error(f"Error generating status page: {e}")

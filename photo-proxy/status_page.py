@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_username: str, nextcloud_dirs: List[str], max_image_size: int, jpg_quality: int, convert_to_jpg: bool, crop_portrait_to_square: bool, cache_stats: Dict[str, int]) -> str:
+def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_username: str, nextcloud_dirs: List[str], max_image_size: int, jpg_quality: int, convert_to_jpg: bool, crop_portrait_to_square: bool, cache_stats: Dict[str, int], debug_logging: bool) -> str:
     """Generate a status page with information about the service using Bootstrap 5."""
     return f"""
     <!DOCTYPE html>
@@ -50,22 +50,28 @@ def generate_status_page(images: List[Dict], nextcloud_url: str, nextcloud_usern
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="bi bi-check-circle-fill text-success me-2"></i>
                                         <span class="status-badge">Running</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="bi bi-images me-2"></i>
                                         <span class="status-badge">Total Images: {len(images)}</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="d-flex align-items-center mb-3">
                                         <i class="bi bi-hdd me-2"></i>
                                         <span class="status-badge">Cache Size: {cache_stats['size']}/{cache_stats['max_size']}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="bi bi-bug me-2"></i>
+                                        <span class="status-badge">Debug Logging: {'Enabled' if debug_logging else 'Disabled'}</span>
                                     </div>
                                 </div>
                             </div>
