@@ -57,6 +57,42 @@ def crop_portrait_to_square(image: Image.Image) -> Image.Image:
         logger.debug(f"Cropped portrait image to square {width}x{width}")
     return image
 
+def convert_to_landscape_3_2(image: Image.Image) -> Image.Image:
+    """
+    Convert an image to 3:2 landscape format with black bars if needed.
+    If the image is portrait, it will first be cropped to a square and then
+    placed in the center of a 3:2 landscape canvas with black bars.
+
+    Args:
+        image: PIL Image object
+
+    Returns:
+        PIL Image object in 3:2 landscape format
+    """
+    width, height = image.size
+
+    # If portrait, first crop to square
+    if height > width:
+        image = crop_portrait_to_square(image)
+        width = image.size[0]  # Update width after cropping
+
+    # Calculate target dimensions for 3:2 aspect ratio
+    target_height = width  # Keep the original width
+    target_width = int(target_height * 1.5)  # 3:2 aspect ratio
+
+    # Create new black image with 3:2 aspect ratio
+    new_image = Image.new('RGB', (target_width, target_height), (0, 0, 0))
+
+    # Calculate position to paste the original image (center)
+    paste_x = (target_width - width) // 2
+    paste_y = 0
+
+    # Paste the original image onto the black background
+    new_image.paste(image, (paste_x, paste_y))
+    logger.debug(f"Converted image to 3:2 landscape format {target_width}x{target_height}")
+
+    return new_image
+
 def convert_to_jpeg(image: Image.Image, quality: int = 85) -> Image.Image:
     """
     Convert an image to JPEG format if needed.
@@ -87,7 +123,7 @@ def process_image(
         max_size: Maximum width/height for scaling (None for no scaling)
         quality: JPEG quality (1-100)
         convert_to_jpg: Whether to convert the image to JPG format
-        crop_portrait_to_square: Whether to crop portrait images to a square aspect ratio
+        crop_portrait_to_square: Whether to crop portrait images to 3:2 landscape format
 
     Returns:
         Processed image data in bytes
@@ -106,9 +142,9 @@ def process_image(
         if max_size:
             image = scale_image(image, max_size)
 
-        # Crop portrait images to square if requested
+        # Convert portrait images to 3:2 landscape if requested
         if crop_portrait_to_square:
-            image = crop_portrait_to_square(image)
+            image = convert_to_landscape_3_2(image)
 
         # Convert to JPEG if requested
         if convert_to_jpg:
