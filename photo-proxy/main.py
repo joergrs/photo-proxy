@@ -48,7 +48,7 @@ else:
 logger.info(f"Configuration: {config}")
 
 # Get debug logging setting
-DEBUG_LOGGING = os.getenv("DEBUG_LOGGING", config.get("debug_logging", "false")).lower() == "true"
+DEBUG_LOGGING = os.getenv("DEBUG_LOGGING", str(config.get("debug_logging", "false"))).lower() == "true"
 if DEBUG_LOGGING:
     logging.getLogger().setLevel(logging.DEBUG)
     logger.info("Debug logging enabled")
